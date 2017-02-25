@@ -1,45 +1,90 @@
 package fr.android.androidexercises;
 
 import android.os.Bundle;
+import android.os.PersistableBundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.TextView;
 
-public class LibraryActivity extends AppCompatActivity {
+import fr.android.androidexercises.fragments.DetailBookFragment;
+import fr.android.androidexercises.fragments.LibraryFragment;
 
+public class LibraryActivity extends AppCompatActivity implements DetailBookFragment.ToBookDetail{
+
+    Fragment detail ;
+    /**
+     * Dernier livre cliqué par l'utilisateur
+     */
+    Book currentBook;
+    LibraryFragment libraryFragment;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_library);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 
-        TextView messageTextView = (TextView) findViewById(R.id.messageTextView);
-        // TODO call setText() on messageTextView
+        libraryFragment = getFragmentList();
+        setContentView(R.layout.main_activity);
 
-        setSupportActionBar(toolbar);
+        getSupportFragmentManager().beginTransaction().
+                replace(R.id.FrameLayoutList, this.libraryFragment,
+                        LibraryFragment.class.getSimpleName()
+                ).commit();
+        if (!isPortrait()) // affichage du détail du livre
+            goToDetailIfBook(savedInstanceState);
+
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_library, menu);
-        return true;
+    public void goToDetail(Book book) {
+        int idFragment = getMainFrameDetail();
+        Bundle bundle = new Bundle();
+        bundle.putParcelable("book", book);
+        Fragment detailBook = new DetailBookFragment();
+        detailBook.setArguments(bundle);
+        this.detail = detailBook;
+        this.currentBook = book;
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction().
+                replace(idFragment,
+                        detailBook,
+                        DetailBookFragment.class.getSimpleName());
+        if(isPortrait())transaction.addToBackStack("return_to_list");
+        transaction.commit();
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
+    public boolean isPortrait(){
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+        return getResources().getBoolean(R.bool.portrait);
+    }
+
+    /**
+     * Permet de determiner dans quelle Fram place le fragement détail, en fonction de l'orientation
+     * @return idFram
+     */
+    public int getMainFrameDetail(){
+        int idFragment = R.id.FrameLayoutList;
+        if(!isPortrait()) {
+            idFragment = R.id.FrameLayoutListDetail;
         }
+        return idFragment;
+    }
 
-        return super.onOptionsItemSelected(item);
+    public LibraryFragment getFragmentList(){
+        LibraryFragment fragment = (LibraryFragment) getSupportFragmentManager().findFragmentByTag(LibraryFragment.class.getSimpleName());
+        return  fragment==null? new LibraryFragment():fragment;
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putParcelable("currentBook", this.currentBook);
+        super.onSaveInstanceState(outState);
+    }
+
+    /**
+     * Permet d'afficher le detail du livre si l'utilisateur en a déjà selectionné un avant de passer en paysage
+     * @param saveInstanceState
+     */
+    public void goToDetailIfBook(Bundle saveInstanceState){
+        if(saveInstanceState!=null)
+        this.currentBook=saveInstanceState.getParcelable("currentBook");
+        if(this.currentBook!=null)goToDetail(this.currentBook);
     }
 }
