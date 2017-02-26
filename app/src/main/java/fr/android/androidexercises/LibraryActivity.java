@@ -3,6 +3,7 @@ package fr.android.androidexercises;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 
@@ -20,17 +21,22 @@ public class LibraryActivity extends AppCompatActivity implements DetailBookFrag
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         libraryFragment = getFragmentList();
         setContentView(R.layout.main_activity);
-
+        clearBackStack();
         getSupportFragmentManager().beginTransaction().
                 replace(R.id.FrameLayoutList, this.libraryFragment,
                         LibraryFragment.class.getSimpleName()
                 ).commit();
         if (!isPortrait()) // affichage du détail du livre
             goToDetailIfBook(savedInstanceState);
+    }
 
+    private void clearBackStack() {
+        if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+            FragmentManager.BackStackEntry entry = getSupportFragmentManager().getBackStackEntryAt(0);
+            getSupportFragmentManager().popBackStack(entry.getId(), FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        }
     }
 
     @Override
@@ -46,8 +52,11 @@ public class LibraryActivity extends AppCompatActivity implements DetailBookFrag
                 replace(idFragment,
                         detailBook,
                         DetailBookFragment.class.getSimpleName());
-        if(isPortrait())transaction.addToBackStack("return_to_list");
+        if(isPortrait()){
+             transaction.addToBackStack("return_to_list");
+        }
         transaction.commit();
+
     }
 
     public boolean isPortrait(){
